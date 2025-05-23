@@ -1,35 +1,22 @@
-from typing import List, Dict
+from stack_machine.load_cpu import load_cpu
 
-from cpu.cpu import CPU
-from utils.translator import assemble
+#!!! Лучше покури над архитектурой, базовый каркас не сложно меняется, тк я всю логику захардкодил :D !!!
 
+# TODO добавь stream память, просто в data_mam в ф-ии read/write проверяешь адрес памяти порта              (пиво)
+# TODO если хочешь, можешь сделать конструктор mc поудобней, например ставить сигналы энамами или тип того  (придется подумать)
+# TODO добавь все остальные mc по аналогии                                                                  (пиво, но муторно)
+# TODO опционально можешь придумать какуюнибудь удобную систему меток в мк что бы не дрочиться с коммандами
+#                                  типа в конструктор комманды передается метка, а она уже сама разбирается (в целом не сложно)
+# TODO реализуй все комманды                                                                                (пиво, но муторно)
+# TODO добавь логи как хочет пенской                                                                        (пиво)
+# TODO добавь yaml конфиг (import yaml; yaml.safe_load(path))                                               (пиво)
+# вроде все
 
-def main():
-    cpu: CPU = CPU()
+if __name__ == "__main__":
+    cpu_ = load_cpu()
+    while cpu_.running:
+        cpu_.tick()
 
-    program = """
-        LD_ADDR 10
-        LIT 20
-        ADD
-        HALT
-    """
-
-    prog: List[hex] = assemble(program)
-
-    print(prog)
-
-    mem: Dict[hex, hex] = {
-        0x0A: 0x0000_000B,
-        0x0B: 0x0000_000C,
-    }
-
-    cpu.instruction_memory.write_program(prog=prog)
-    cpu.data_memory.write_memory(mem=mem)
-
-    cpu.run()
-
-    pass
-
-
-if __name__ == '__main__':
-    main()
+# легенда
+# адреса мк в коммандах, тк идеалогия стэк арх - простота
+# все остальное просто потому что захотелось, и ваще он про это не говорил

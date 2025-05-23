@@ -1,78 +1,94 @@
-from cpu.alu import Alu
-from cpu.cu.control_unit import ControlUnit
-
-from cpu.mem import DataMem, InstructionMem
-from cpu.registers import Registers
-from cpu.stack import Stack
-from utils.logs import logger
-from cpu.cu.signals import *
+from csa_4th_lab.new.common_utils.bitwise_utils import get_int_cut
+from stack_machine.cpu.mc.mc import mc
+from stack_machine.cpu.mem.data_mem import data_mem
+from stack_machine.cpu.mem.inst_mem import inst_mem
+from stack_machine.cpu.signals.signals import common_signal
+from stack_machine.cpu.stack.stack import stack
 
 
-class CPU:
+class cpu:
+    def __init__(self, stack_size: int, mem: data_mem, i_mem: inst_mem, mc_mem: list[mc]):
+        self.data_stack = stack(stack_size)
+        self.ret_stack = stack(stack_size)
+        self.mem = mem
+        self.i_mem = i_mem
+        self.regs = [0 for i in range(4)]
+        self.reg_names = {
+            "A": 0,
+            "B": 1,
+            "PC": 2,
+            "I": 3
+        }
+        # тут получился циклический импорт, но ты на пэкэджи все равно переделаешь, так что не буду заморачиваться
+        from stack_machine.cpu.units.units import alu_unit, mem_unit, decoder_unit
+        self.alu = alu_unit()
+        self.mem_unit = mem_unit()
+        self.decoder = decoder_unit()
+        self.last_alu_output = 0
+        self.mc_mem = mc_mem
+        self.tick_count = 0
+        self.running = True
 
-    def __init__(self, data_memory_size: int = 256, instruction_memory_size: int = 256):
-        self.data_memory: DataMem = DataMem(data_memory_size)
-        self.instruction_memory: InstructionMem = InstructionMem(instruction_memory_size)
+    def tick(self):
+        imm, tick_signals = self.decoder.handle(self)
+        for i in tick_signals:
+            self.tick_count += 1
+            if self.tick_count == 11:
+                a = 1
+            other: common_signal = i[2]
+            cpu_signals = {
+                "load_imm": get_int_cut(other.val, [0]) == 1,
+                "push_stack": get_int_cut(other.val, [1]) == 1,
+                "pop_stack": get_int_cut(other.val, [2]) == 1,
+                "push_ret": get_int_cut(other.val, [3]) == 1,
+                "load_T": get_int_cut(other.val, [4]) == 1,
+                "load_S": get_int_cut(other.val, [5]) == 1,
+                "fetch_pc": get_int_cut(other.val, [6]) == 1,
+                "restore_pc": get_int_cut(other.val, [7]) == 1,
+                "kill_cpu": get_int_cut(other.val, [8]) == 1,
+            }
+            # в тупую интерпритируем сигналы
+            if cpu_signals["load_imm"]:
+                self.set_reg("B", imm)
+            if cpu_signals["load_T"]:
+                self.set_reg("A", self.data_stack.get_T())
+            if cpu_signals["load_S"]:
+                self.set_reg("B", self.data_stack.get_S())
+            self.last_alu_output = self.alu.handle(i[0], self)
+            self.mem_unit.handle(i[1], self)
+            if cpu_signals["fetch_pc"]:
+                self.set_reg("PC", self.last_alu_output)
+            if cpu_signals["push_stack"]:
+                self.data_stack.push(self.last_alu_output)
+            if cpu_signals["pop_stack"]:
+                self.data_stack.pop()
+            if cpu_signals["fetch_pc"]:
+                self.ret_stack.push(self.get_reg("PC"))
+            if cpu_signals["restore_pc"]:
+                self.set_reg("PC", self.ret_stack.get_T())
+                self.ret_stack.pop()
+            if cpu_signals["kill_cpu"]:
+                self.running = False
+        # a bit of readabl code
+        cpu_condition = f"""tick {self.tick_count}
+A  {self.regs[0]}
+B  {self.regs[1]}
+PC {self.regs[2]}
+I  {self.regs[3]}
+MEM {self.mem.mem}
+data_stack {self.data_stack.stack}"""
+        print(cpu_condition)
+        print()
+        print()
 
-        self.alu: Alu = Alu(self)
 
-        self.data_stack = [0x0] * (data_memory_size // 2)
-        self.return_stack = [0x0] * (data_memory_size // 2)
 
-        self.stack: Stack = Stack(data_memory_size // 2, self)
 
-        self.registers: Registers = Registers()
-        self.control_unit: ControlUnit = ControlUnit()
-
-        self.instruction: hex = None
-        self.opcode: hex = None
-        self.buffer: hex = None
-
-    def execute_micro_step(self):
-        category, step = self.control_unit.microcode_steps[self.control_unit.microcode_index]
-        if category in self.control_unit.micro_command_rom.micro_ops and \
-                step in self.control_unit.micro_command_rom.micro_ops[category]:
-            self.control_unit.micro_command_rom.get(category, step)(self)
-            logger.info(f"Micro-op: {step}")
-        else:
-            logger.error(f"Undefined Micro-op: {category} {step}")
-
-        self.control_unit.microcode_index += 1
-        if self.control_unit.microcode_index >= len(self.control_unit.microcode_steps):
-            return False
-        return True
-
-    def run(self):
-        self.control_unit.running = True
-        logger.info(f"Program start running")
-
-        self.control_unit.cycle()
-
-        while self.control_unit.is_running():
-            logger.info(f" --- tact: {self.control_unit.tact} ---")
-
-            if self.control_unit.signals[ControlSignals.FETCH_DECODE]:
-                logger.info(f" --- new instruction ---")
-                self.instruction = self.instruction_memory.read(self.registers.pc)
-                if self.instruction is None:
-                    self.control_unit.set_signal(ControlSignals.HALT, 1)
-                    break
-                self.registers.pc += 1
-                logger.info(f"Load instruction: {self.instruction}")
-
-                self.opcode = self.instruction >> 24
-                self.buffer = self.instruction & 0x00FF_FFFF
-                self.control_unit.microcode_steps = self.control_unit.get_microcode(self.opcode)
-                self.control_unit.microcode_index = 0
-                logger.info(f"Decode instruction: {self.control_unit.microcode_steps_to_str()}")
-                logger.info(f"Decode buffer: {self.buffer}")
-
-            if self.control_unit.signals[ControlSignals.EXECUTE]:
-                logger.info(f"Executing")
-                if not self.execute_micro_step():
-                    self.control_unit.set_signal(ControlSignals.EXECUTE, 0)
-            self.control_unit.cycle()
-            logger.info(f"PC: {self.registers.pc}, Data Stack: {self.data_stack[:self.registers.sp + 1]}, "
-                        f"Return Stack: {self.return_stack[:self.registers.rp + 1]}, "
-                        f"A: {self.registers.a}, B: {self.registers.b}, TOS: {self.registers.tos}, "
-                        f"C: {self.registers.c}, V: {self.registers.v}")
+    def get_reg(self, reg: int | str):
+        if isinstance(reg, str):
+            reg = self.reg_names[reg]
+        return self.regs[reg]
+    def set_reg(self, reg: [int|str], val: int):
+        if isinstance(reg, str):
+            reg = self.reg_names[reg]
+        self.regs[reg] = val

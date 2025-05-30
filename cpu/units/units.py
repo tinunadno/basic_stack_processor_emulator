@@ -32,6 +32,16 @@ class alu_unit:
             return a | b
         if "inc" in signals:
             return a + 1
+        if "mul" in signals:
+            return a * b
+        if "div" in signals:
+            return a // b
+        if "shl" in signals:
+            return a << 1
+        if "shr" in signals:
+            return a >> 1
+        if "not" in signals:
+            return ~a
         return 0
 
 # если читает, кладет в A. адрес берется из imm (из инструкции) и верхушки стэка

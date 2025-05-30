@@ -1,4 +1,7 @@
+from fontTools.ttLib.tables.ttProgram import instructions
+
 from stack_machine.cpu.cpu import cpu
+from stack_machine.cpu.instruction.instruction import inst
 from stack_machine.cpu.mc.mc import mc
 from stack_machine.cpu.mem.data_mem import data_mem
 from stack_machine.cpu.mem.inst_mem import inst_mem
@@ -14,16 +17,7 @@ from stack_machine.cpu.mem.inst_mem import inst_mem
 
 def load_cpu() -> cpu:
     mc_: list[mc] = [ # manually setting up microcommands, u can make beautiful constructor for mc class and it'll be readable
-        # mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "add"),
-        # mc([("mc", ["term_mc"])]),
-        # mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem", "write_read"]), ("cpu", ["load_imm", "load_T"])], "load"),
-        # mc([("mc", ["term_mc"])]),
-        # mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "load_T"])], "store"),
-        # mc([("mc", ["term_mc"])]),
-        # mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "sum_top"),
-        # mc([("mc", ["term_mc"])]),
-        # mc([("cpu", ["pop_stack"])], "pop"),
-        # mc([("mc", ["term_mc"])]),
+        # fst block
         mc([("alu", ["open_b", "add"]), ("cpu", ["load_imm", "push_stack"])], "push_imm"),
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_b", "add"]), ("mem", ["do_mem", "read"]), ("cpu", ["load_imm"])], "lw_from_im_addr"),
@@ -32,9 +26,9 @@ def load_cpu() -> cpu:
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_b", "add"]), ("mem", ["do_mem", "read"])], "lw_from_b_addr"),
         mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem", "read"])], "lw_from_b_addr"),
-        mc([("alu", ["open_a", "inc"]), ("cpu", ["push_stack"])], "inc_a"),
-        mc([("cpu", ["load_T_a", "pop_stack"])], "inc_a"),
+        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem", "read"])], "lw_from_b_addr_inc_a"),
+        mc([("alu", ["open_a", "inc"]), ("cpu", ["push_stack"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "pop_stack"])], "sw_to_imm_addr"),
         mc([("mc", ["term_mc"])]),
@@ -42,45 +36,54 @@ def load_cpu() -> cpu:
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_b_addr"),
         mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_a_addr"),
-        mc([("alu", ["open_a", "inc"]), ("cpu", ["push_stack"])], "inc_a"),
-        mc([("cpu", ["load_T_a", "pop_stack"])], "inc_a"),
+        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_a_addr_inc_a"),
+        mc([("alu", ["open_a", "inc"]), ("cpu", ["push_stack"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
         mc([("mc", ["term_mc"])]),
-        mc([("cpu", ["load_T_a", "pop_stack"])], "ST -> A; pop"),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "load_T_a_pop"),
         mc([("mc", ["term_mc"])]),
-        mc([("cpu", ["load_T_b", "pop_stack"])], "ST -> B; pop"),
+        mc([("cpu", ["load_T_b", "pop_stack"])], "load_T_b_push"),
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_a", "add"]), ("cpu", ["push_stack"])], "push_a"),
         mc([("mc", ["term_mc"])]),
-        # mc(0b0_000110010_00_000111),  # 0 | A + B -> T
-        # mc(0b1_000000000_00_000000),  # 1 | term
-        # mc(0b0_000010001_11_000111),  # 2 | imm -> B; T -> A; mem[B + A] -> T
-        # mc(0b1_000000000_00_000000),  # 3 | term
-        # mc(0b0_000010001_01_000111),  # 4 | imm -> B; T -> A; S -> mem[B + A]
-        # mc(0b1_000000000_00_000000),  # 5 | term
-        # mc(0b0_000110010_00_000111),  # 6 | T -> A; S -> B; A + B ->T
-        # mc(0b1_000000000_00_000000),  # 7 | term
-        # mc(0b0_000000100_00_000000),  # 8 | pop
-        # mc(0b1_000000000_00_000000),  # 9 | term
-        # mc(0b0_000000011_00_000110),  # 10| imm -> B; B + 0 -> T
-        # mc(0b1_000000000_00_000000),  # 11| term
-
-        # mc(0b0_100000000_00_000000),  # 12| halt
-        # mc(0b1_000000000_00_000000),  # 13| term
-        # mc(0b0_000000010_00_000101),  # 14| A -> T
-        # mc(0b1_000000000_00_000000),  # 15| term
+        # arithm
+        mc([("cpu", ["load_T_a", "pop_stack"])], "+"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "-"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "open_b", "sub"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "*"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "open_b", "mul"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "/"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "open_b", "div"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "<<"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "shl"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], ">>"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "shr"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "not"),
+        mc([("cpu", ["load_T_a", "pop_stack"])]),
+        mc([("alu", ["open_a", "not"]), ("cpu", ["push_stack"])]),
+        mc([("mc", ["term_mc"])]),
     ]
-    inst = [ # manually setting up instructions
+    insts = [ # manually setting up instructions
         # imm                      mc_addr
-        0b000011111111111111111111_00000000,   # li 0b1111                               stack: [0b1111]
-        0b000011111111111111111111_00010110,   # li 0b1111                               stack: [0b1111]
-        0b000011111111111111111111_00011000,   # li 0b1111                               stack: [0b1111]
-        0b000011111111111111111111_00011010,   # li 0b1111                               stack: [0b1111]
-
-
+        inst.generate_inst(mc_, "push_imm", 73),
+        inst.generate_inst(mc_, "push_imm", 74),
+        inst.generate_inst(mc_, "not", 74),
 
     ]
     # 0b0_0000000_00_000000
-    i_mem = inst_mem(inst)
+    i_mem = inst_mem(insts)
     mem = data_mem(32, [80, 84], [1, 2, 3, 4, 5])
     return cpu(8, mem, i_mem, mc_)

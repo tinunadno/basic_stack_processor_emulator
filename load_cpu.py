@@ -43,5 +43,5 @@ def load_cpu() -> cpu:
         0b000000000000000000000000_00001100,   # halt
     ]
     i_mem = inst_mem(inst)
-    mem = data_mem(32)
+    mem = data_mem(32, [80, 84], [1, 2, 3, 4, 5])
     return cpu(8, mem, i_mem, mc_)

@@ -1,4 +1,4 @@
-from csa_4th_lab.new.common_utils.bitwise_utils import get_int_cut
+from csa_4th_lab.src.common_utils.bitwise_utils import get_int_cut
 from stack_machine.cpu.mc.mc import mc
 from stack_machine.cpu.mem.data_mem import data_mem
 from stack_machine.cpu.mem.inst_mem import inst_mem

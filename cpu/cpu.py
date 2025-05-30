@@ -60,6 +60,8 @@ class cpu:
             if "restore_pc" in cpu_signals:
                 self.set_reg("PC", self.ret_stack.get_T())
                 self.ret_stack.pop()
+            if "over" in cpu_signals:
+                self.data_stack.over()
             if "kill_cpu" in cpu_signals:
                 self.running = False
         # a bit of readabl code

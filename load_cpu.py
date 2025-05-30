@@ -76,12 +76,19 @@ def load_cpu() -> cpu:
         mc([("cpu", ["load_T_b", "pop_stack"])]),
         mc([("alu", ["open_a", "open_b", "xor"]), ("cpu", ["push_stack"])]),
         mc([("mc", ["term_mc"])]),
+        # thd block
+        mc([("alu", ["open_a", "add"]), ("cpu", ["load_T_a", "push_stack"])], "dup"),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["pop_stack"])], "pop"),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["over"])], "over"),
+        mc([("mc", ["term_mc"])]),
     ]
     insts = [ # manually setting up instructions
         # imm                      mc_addr
         inst.generate_inst(mc_, "push_imm", 73),
         inst.generate_inst(mc_, "push_imm", 74),
-        inst.generate_inst(mc_, "+", 74),
+        inst.generate_inst(mc_, "pop", 74),
 
     ]
     # 0b0_0000000_00_000000

@@ -12,3 +12,7 @@ class stack:
     def pop(self):
         self.stack.pop(-1)
         self.stack[0:0] = [0]
+    def over(self):
+        tmp = self.stack[-1]
+        self.stack[-1] = self.stack[-2]
+        self.stack[-2] = tmp

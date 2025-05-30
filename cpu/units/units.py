@@ -1,6 +1,6 @@
 from stack_machine.cpu.cpu import cpu
 from stack_machine.cpu.signals.signals import common_signal
-from stack_machine.utils.bitwise_utils import get_int_cut
+from stack_machine.utils.bitwise_utils import get_int_cut, cast_immediate
 from stack_machine.cpu.instruction.instruction import inst
 
 # в тупую интерпритирует сигналы
@@ -17,12 +17,17 @@ class alu_unit:
         signals = sig.val
         a = 0
         b = 0
-        # по аналогии можешь добавить !!!!ВАЖНО!!!! НЕ ЗАБУДЬ ПРО ФОРМАТ МК КОГДА БУДЕШЬ ДОБАВЛЯТЬ
         if "open_a" in signals:
             a = cpu_.get_reg("A")
         if "open_b" in signals:
             b = cpu_.get_reg("B")
         if "add" in signals:
+            if "if" in signals:
+                if cpu_.data_stack.get_T() != 0:
+                    return a
+            if "-fi" in signals:
+                if cpu_.data_stack.get_T() < 0:
+                    return a
             return a + b
         if "sub" in signals:
             return a - b
@@ -71,7 +76,7 @@ class decoder_unit:
     def handle(self, cpu_: cpu) -> [int, list[list[common_signal]]]:
         inst_addr = cpu_.get_reg("PC")
         inst_ = inst(cpu_.i_mem.get_inst(inst_addr))
-        imm = get_int_cut(inst_.bits, inst_.imm)
+        imm = cast_immediate(get_int_cut(inst_.bits, inst_.imm), inst_.imm)
         mc_addr = get_int_cut(inst_.bits, inst_.mc_addr)
         # тут если хочешь, можешь добавить более сложную логику fetcha, но в формате инструкции заложено 255 мк, а этого хватит
         current_mc = cpu_.mc_mem[mc_addr]

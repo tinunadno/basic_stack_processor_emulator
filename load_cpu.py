@@ -83,15 +83,26 @@ def load_cpu() -> cpu:
         mc([("mc", ["term_mc"])]),
         mc([("cpu", ["over"])], "over"),
         mc([("mc", ["term_mc"])]),
+        # control flow insts
+        mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["load_PC", "load_imm", "fetch_pc"])], "jmp"),
+        mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["load_PC", "load_imm", "call"])], "call"),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["restore_pc"])], "ret"),
+        mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_a", "open_b", "add", "if"]), ("cpu", ["load_PC", "load_imm", "fetch_pc"])], "if"),
+        mc([("mc", ["term_mc"])]),
+        mc([("cpu", ["kill_cpu"])], "halt"),
+        mc([("mc", ["term_mc"])]),
     ]
     insts = [ # manually setting up instructions
         # imm                      mc_addr
-        inst.generate_inst(mc_, "push_imm", 73),
         inst.generate_inst(mc_, "push_imm", 74),
-        inst.generate_inst(mc_, "pop", 74),
+        inst.generate_inst(mc_, "if", -1),
+        inst.generate_inst(mc_, "halt", -1),
 
     ]
     # 0b0_0000000_00_000000
     i_mem = inst_mem(insts)
     mem = data_mem(32, [80, 84], [1, 2, 3, 4, 5])
-    return cpu(8, mem, i_mem, mc_)
+    return cpu(8, mem, i_mem, mc_, 0)

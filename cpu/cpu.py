@@ -7,7 +7,7 @@ from stack_machine.cpu.stack.stack import stack
 
 
 class cpu:
-    def __init__(self, stack_size: int, mem: data_mem, i_mem: inst_mem, mc_mem: list[mc]):
+    def __init__(self, stack_size: int, mem: data_mem, i_mem: inst_mem, mc_mem: list[mc], ep: int):
         self.data_stack = stack(stack_size)
         self.ret_stack = stack(stack_size)
         self.mem = mem
@@ -19,6 +19,7 @@ class cpu:
             "PC": 2,
             "I": 3
         }
+        self.set_reg("PC", ep)
         # тут получился циклический импорт, но ты на пэкэджи все равно переделаешь, так что не буду заморачиваться
         from stack_machine.cpu.units.units import alu_unit, mem_unit, decoder_unit
         self.alu = alu_unit()
@@ -47,6 +48,8 @@ class cpu:
                 self.set_reg("B", self.data_stack.get_T())
             if "load_S" in cpu_signals:
                 self.set_reg("B", self.data_stack.get_S())
+            if "load_PC" in cpu_signals:
+                self.set_reg("A", self.get_reg("PC"))
             self.last_alu_output = self.alu.handle(i[0], self)
             self.mem_unit.handle(i[1], self)
             if "fetch_pc" in cpu_signals:
@@ -55,8 +58,9 @@ class cpu:
                 self.data_stack.push(self.last_alu_output)
             if "pop_stack" in cpu_signals:
                 self.data_stack.pop()
-            if "fetch_pc" in cpu_signals:
+            if "call" in cpu_signals:
                 self.ret_stack.push(self.get_reg("PC"))
+                self.set_reg("PC", self.last_alu_output)
             if "restore_pc" in cpu_signals:
                 self.set_reg("PC", self.ret_stack.get_T())
                 self.ret_stack.pop()

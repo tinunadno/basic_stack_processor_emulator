@@ -41,8 +41,10 @@ class cpu:
             # в тупую интерпритируем сигналы
             if "load_imm" in cpu_signals:
                 self.set_reg("B", imm)
-            if "load_T" in cpu_signals:
+            if "load_T_a" in cpu_signals:
                 self.set_reg("A", self.data_stack.get_T())
+            if "load_T_b" in cpu_signals:
+                self.set_reg("B", self.data_stack.get_T())
             if "load_S" in cpu_signals:
                 self.set_reg("B", self.data_stack.get_S())
             self.last_alu_output = self.alu.handle(i[0], self)

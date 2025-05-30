@@ -42,15 +42,15 @@ class mem_unit:
         if not "do_mem" in signals:
             return
         # тут можешь поменять что куда пишет и добавить еще какихнить функций
-        if not "write_read" in signals:
+        if not "read" in signals:
             # eg write
             addr = cpu_.last_alu_output
-            val = cpu_.data_stack.get_S()
+            val = cpu_.data_stack.get_T()
             cpu_.mem.write(addr, val)
         else:
             addr = cpu_.last_alu_output
             val = cpu_.mem.read(addr)
-            cpu_.set_reg("A", val)
+            cpu_.data_stack.push(val)
 
 # смотри на аддрес мк (в самой инструкции) и набивает список сигналов
 class decoder_unit:

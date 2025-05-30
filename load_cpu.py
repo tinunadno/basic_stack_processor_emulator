@@ -13,24 +13,26 @@ from stack_machine.cpu.mem.inst_mem import inst_mem
 # }
 
 def load_cpu() -> cpu:
-    # 0b0_0000000_00_000000
     mc_: list[mc] = [ # manually setting up microcommands, u can make beautiful constructor for mc class and it'll be readable
-        #               w|n |&-+ba
-        mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "add"),                          # add
+        # mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "add"),
+        # mc([("mc", ["term_mc"])]),
+        # mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem", "write_read"]), ("cpu", ["load_imm", "load_T"])], "load"),
+        # mc([("mc", ["term_mc"])]),
+        # mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "load_T"])], "store"),
+        # mc([("mc", ["term_mc"])]),
+        # mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "sum_top"),
+        # mc([("mc", ["term_mc"])]),
+        # mc([("cpu", ["pop_stack"])], "pop"),
+        # mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_b", "add"]), ("cpu", ["load_imm", "push_stack"])], "push_imm"),
         mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem", "write_read"]), ("cpu", ["load_imm", "load_T"])], "load"),   # load
+        mc([("alu", ["open_b", "add"]), ("mem", ["do_mem", "read"]), ("cpu", ["load_imm"])], "lw_from_im_addr"),
         mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "load_T"])], "store"),                   # store
+        mc([("alu", ["open_a", "add"]),  ("mem", ["do_mem", "read"])], "lw_from_a_addr"),
         mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "open_b", "add"]), ("cpu", ["push_stack", "load_T", "load_S"])], "sum_top"),                          # sum top
+        mc([("alu", ["open_b", "add"]), ("mem", ["do_mem", "read"])], "lw_from_b_addr"),
         mc([("mc", ["term_mc"])]),
-        mc([("cpu", ["pop_stack"])], "pop"),                                                                                     # pop
-        mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_b", "add"]), ("cpu", ["load_imm", "push_stack"])], "push_imm"),                                            # push immediate
-        mc([("mc", ["term_mc"])]),
-        mc([("cpu", ["kill_cpu"])], "halt"),                                                                                      # halt
-        mc([("mc", ["term_mc"])]),
-        mc([("alu", ["open_a", "add"]), ("cpu", ["push_stack"])], "push a"),
+        mc([("alu", ["open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "pop_stack"])], "sw_to_imm_addr"),
         mc([("mc", ["term_mc"])]),
         # mc(0b0_000110010_00_000111),  # 0 | A + B -> T
         # mc(0b1_000000000_00_000000),  # 1 | term
@@ -52,22 +54,13 @@ def load_cpu() -> cpu:
     ]
     inst = [ # manually setting up instructions
         # imm                      mc_addr
-        0b000011111111111111111111_00001010,   # li 0b1111                               stack: [0b1111]
-        0b000000000000000001001011_00001010,   # li 0b1011                               stack: [0b1011, 0b1111]
-        0b000000000000000000000000_00000000,   # sum_top                                 stack: [sum, 0b1011, 0b1111]
-        0b000000000000000000010000_00001010,   # li 0b10000 (it's 'gonna be an address)  stack: [0b10000, sum, 0b1011, 0b1111]
-        0b000000000000000000000000_00000100,   # T -> A; imm -> B; S -> mem[A + B]       writing
-        0b000000000000000000000000_00001000,   # pop                                     stack: [sum, 0b1011, 0b1111]
-        0b000000000000000000000000_00001000,   # pop                                     stack: [0b1011, 0b1111]
-        0b000000000000000000000000_00001000,   # pop                                     stack: [0b1111]
-        0b000000000000000000000000_00001000,   # pop                                     stack: []
-        0b000000000000000000010000_00001010,   # li 0b10000 (let's try to read that shit)stack: [0b10000]
-        0b000000000000000000000001_00000010,   #(i'll read it with one byte displacement)stack: [0b10000]
-        0b000000000000000000000000_00001110,   # push A (mem is in a right now)          stack: [mem, 0b10000]
-        0b000000000000000000000000_00001000,   # pop                                     stack: [0b10000]
-        0b000000000000000000000000_00001000,   # pop                                     stack: []
-        0b000000000000000000000000_00001100,   # halt
+        0b000011111111111111111111_00000000,   # li 0b1111                               stack: [0b1111]
+        0b000000000000000000000100_00001000,  # mem[imm] -> stack
+        0b000000000000000000000010_00000010,   # mem[imm] -> stack
+
+
     ]
+    # 0b0_0000000_00_000000
     i_mem = inst_mem(inst)
     mem = data_mem(32, [80, 84], [1, 2, 3, 4, 5])
     return cpu(8, mem, i_mem, mc_)

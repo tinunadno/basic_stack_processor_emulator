@@ -36,38 +36,29 @@ class cpu:
             if self.tick_count == 11:
                 a = 1
             other: common_signal = i[2]
-            cpu_signals = {
-                "load_imm": get_int_cut(other.val, [0]) == 1,
-                "push_stack": get_int_cut(other.val, [1]) == 1,
-                "pop_stack": get_int_cut(other.val, [2]) == 1,
-                "push_ret": get_int_cut(other.val, [3]) == 1,
-                "load_T": get_int_cut(other.val, [4]) == 1,
-                "load_S": get_int_cut(other.val, [5]) == 1,
-                "fetch_pc": get_int_cut(other.val, [6]) == 1,
-                "restore_pc": get_int_cut(other.val, [7]) == 1,
-                "kill_cpu": get_int_cut(other.val, [8]) == 1,
-            }
+
+            cpu_signals = other.val
             # в тупую интерпритируем сигналы
-            if cpu_signals["load_imm"]:
+            if "load_imm" in cpu_signals:
                 self.set_reg("B", imm)
-            if cpu_signals["load_T"]:
+            if "load_T" in cpu_signals:
                 self.set_reg("A", self.data_stack.get_T())
-            if cpu_signals["load_S"]:
+            if "load_S" in cpu_signals:
                 self.set_reg("B", self.data_stack.get_S())
             self.last_alu_output = self.alu.handle(i[0], self)
             self.mem_unit.handle(i[1], self)
-            if cpu_signals["fetch_pc"]:
+            if "fetch_pc" in cpu_signals:
                 self.set_reg("PC", self.last_alu_output)
-            if cpu_signals["push_stack"]:
+            if "push_stack" in cpu_signals:
                 self.data_stack.push(self.last_alu_output)
-            if cpu_signals["pop_stack"]:
+            if "pop_stack" in cpu_signals:
                 self.data_stack.pop()
-            if cpu_signals["fetch_pc"]:
+            if "fetch_pc" in cpu_signals:
                 self.ret_stack.push(self.get_reg("PC"))
-            if cpu_signals["restore_pc"]:
+            if "restore_pc" in cpu_signals:
                 self.set_reg("PC", self.ret_stack.get_T())
                 self.ret_stack.pop()
-            if cpu_signals["kill_cpu"]:
+            if "kill_cpu" in cpu_signals:
                 self.running = False
         # a bit of readabl code
         cpu_condition = f"""tick {self.tick_count}

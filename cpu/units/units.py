@@ -14,28 +14,21 @@ class alu_unit:
         self.and_ = [4]
         self.or_ = [5]
     def handle(self, sig: common_signal, cpu_: cpu):
-        signals = {
-            "open_a": get_int_cut(sig.val, self.open_a) == 1,
-            "open_b": get_int_cut(sig.val, self.open_b) == 1,
-            "add": get_int_cut(sig.val, self.add) == 1,
-            "sub": get_int_cut(sig.val, self.sub) == 1,
-            "and": get_int_cut(sig.val, self.and_) == 1,
-            "or": get_int_cut(sig.val, self.or_) == 1,
-        }
+        signals = sig.val
         a = 0
         b = 0
         # по аналогии можешь добавить !!!!ВАЖНО!!!! НЕ ЗАБУДЬ ПРО ФОРМАТ МК КОГДА БУДЕШЬ ДОБАВЛЯТЬ
-        if signals["open_a"]:
+        if "open_a" in signals:
             a = cpu_.get_reg("A")
-        if signals["open_b"]:
+        if "open_b" in signals:
             b = cpu_.get_reg("B")
-        if signals["add"]:
+        if "add" in signals:
             return a + b
-        if signals["sub"]:
+        if "sub" in signals:
             return a - b
-        if signals["and"]:
+        if "and" in signals:
             return a & b
-        if signals["or"]:
+        if "or" in signals:
             return a | b
         return 0
 
@@ -45,14 +38,11 @@ class mem_unit:
         self.need_mem = [0]
         self.write_read = [1]
     def handle(self, sig: common_signal, cpu_: cpu):
-        signals = {
-            "need_mem": get_int_cut(sig.val, self.need_mem) == 1,
-            "write_read": get_int_cut(sig.val, self.write_read) == 1
-        }
-        if not signals["need_mem"]:
+        signals = sig.val
+        if not "do_mem" in signals:
             return
         # тут можешь поменять что куда пишет и добавить еще какихнить функций
-        if not signals["write_read"]:
+        if not "write_read" in signals:
             # eg write
             addr = cpu_.last_alu_output
             val = cpu_.data_stack.get_S()
@@ -72,10 +62,10 @@ class decoder_unit:
         # тут если хочешь, можешь добавить более сложную логику fetcha, но в формате инструкции заложено 255 мк, а этого хватит
         current_mc = cpu_.mc_mem[mc_addr]
         ret_sig = []
-        while get_int_cut(current_mc.bits, current_mc.term_mc) == 0:
-            ret_sig.append([common_signal(get_int_cut(current_mc.bits, current_mc.alu_sig)),
-                            common_signal(get_int_cut(current_mc.bits, current_mc.mem_sig)),
-                            common_signal(get_int_cut(current_mc.bits, current_mc.other)),
+        while not "term_mc" in current_mc.get_signal("mc"):
+            ret_sig.append([common_signal(current_mc.get_signal("alu")),
+                            common_signal(current_mc.get_signal("mem")),
+                            common_signal(current_mc.get_signal("cpu")),
                             ])
             mc_addr += 1
             current_mc = cpu_.mc_mem[mc_addr]

@@ -1,8 +1,34 @@
-# тоже по факту обертка над интом, можно вынести форматы в конфиг, и сделать фабрику
+from stack_machine.utils.bitwise_utils import set_int_cut, get_int_cut
+
+
+class mc_signals_descriptions:
+    def __init__(self, signals: dict[str, int], rang: list[int]):
+        self.sig_range = rang
+        self.signals = signals
+    def get_signal_as_dict(self, signal: int) -> dict[str, bool]:
+        ret = {}
+        for i in self.signals.items():
+            val = get_int_cut(signal, [i[1]])
+            if val != 0:
+                ret[i[0]] = True
+        return ret
+
+mc_sigs_info : dict[str, mc_signals_descriptions] = {
+    "alu": mc_signals_descriptions( {"open_a": 0,"open_b": 1,"add": 2,"sub": 3,"and": 4,"or": 5,}, [0, 5]),
+    "mem": mc_signals_descriptions( {"do_mem": 0,"write_read": 1}, [6, 7]),
+    "cpu": mc_signals_descriptions( {"load_imm": 0,"push_stack": 1,"pop_stack": 2,"push_ret": 3,"load_T": 4,"load_S": 5,
+                              "fetch_pc": 6,"restore_pc": 7,"kill_cpu": 8,}, [8, 16]),
+    "mc": mc_signals_descriptions( {"term_mc": 0}, [17]),
+}
+
 class mc:
-    def __init__(self, mc_val: int):
-        self.alu_sig = [0, 5]   # open a, open b, add sub and or You can add watever you want to
-        self.mem_sig = [6, 7]   # need_mem, write\read (write's T, readt to A, adress is always ALU result)
-        self.other = [8, 16]    # other cpu signals
-        self.term_mc = [17]
-        self.bits = mc_val
+    def __init__(self, signals: list[tuple[str, list[str]]], desc: str = ""):
+        self.bits: int = 0
+        self.desc = desc
+        for sig in signals:
+            name = sig[0]
+            for signal_bit in sig[1]:
+                self.bits = set_int_cut(self.bits, [mc_sigs_info[name].signals[signal_bit] + mc_sigs_info[name].sig_range[0]], 1)
+    def get_signal(self, name: str) -> dict[str, bool]:
+        return mc_sigs_info[name].get_signal_as_dict(get_int_cut(self.bits, mc_sigs_info[name].sig_range))
+

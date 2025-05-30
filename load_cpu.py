@@ -34,6 +34,14 @@ def load_cpu() -> cpu:
         mc([("mc", ["term_mc"])]),
         mc([("alu", ["open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["load_imm", "pop_stack"])], "sw_to_imm_addr"),
         mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_a_addr"),
+        mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_b", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_b_addr"),
+        mc([("mc", ["term_mc"])]),
+        mc([("alu", ["open_a", "add"]), ("mem", ["do_mem"]), ("cpu", ["pop_stack"])], "sw_to_a_addr"),
+        mc([("alu", ["open_a", "inc"]), ("cpu", ["push_stack"])], "inc_a"),
+        mc([("cpu", ["load_T_a", "pop_stack"])], "inc_a"),
+        mc([("mc", ["term_mc"])]),
         # mc(0b0_000110010_00_000111),  # 0 | A + B -> T
         # mc(0b1_000000000_00_000000),  # 1 | term
         # mc(0b0_000010001_11_000111),  # 2 | imm -> B; T -> A; mem[B + A] -> T
@@ -56,7 +64,8 @@ def load_cpu() -> cpu:
         # imm                      mc_addr
         0b000011111111111111111111_00000000,   # li 0b1111                               stack: [0b1111]
         0b000000000000000000000100_00001000,  # mem[imm] -> stack
-        0b000000000000000000000010_00000010,   # mem[imm] -> stack
+        0b000000000000000000000010_00000010,   # mem[imm] -> stac
+        0b000000000000000000000100_00001110,  # mem[imm] -> stack# k
 
 
     ]

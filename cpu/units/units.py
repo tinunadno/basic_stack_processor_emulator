@@ -30,6 +30,8 @@ class alu_unit:
             return a & b
         if "or" in signals:
             return a | b
+        if "inc" in signals:
+            return a + 1
         return 0
 
 # если читает, кладет в A. адрес берется из imm (из инструкции) и верхушки стэка

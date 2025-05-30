@@ -42,6 +42,8 @@ class alu_unit:
             return a >> 1
         if "not" in signals:
             return ~a
+        if "xor" in signals:
+            return a ^ b
         return 0
 
 # если читает, кладет в A. адрес берется из imm (из инструкции) и верхушки стэка
